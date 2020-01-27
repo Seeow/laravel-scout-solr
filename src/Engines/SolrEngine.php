@@ -2,19 +2,23 @@
 
 namespace Scout\Solr\Engines;
 
+use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Scout\Solr\Builder;
 use Scout\Solr\Searchable;
 use Laravel\Scout\Engines\Engine;
 use Solarium\Client as SolariumClient;
 use Laravel\Scout\Builder as BaseBuilder;
 use Illuminate\Database\Eloquent\Collection;
+use Solarium\Core\Query\Result\Result;
+use Solarium\QueryType\Update\Query\Document\Document;
 
 class SolrEngine extends Engine
 {
     /**
      * The Solarium client we are currently using.
      *
-     * @var \Solarium\Client
+     * @var SolariumClient
      */
     private $client;
 
@@ -38,7 +42,7 @@ class SolrEngine extends Engine
     /**
      * Update the given model in the index.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection  $models
+     * @param Collection $models
      * @return void
      */
     public function update($models)
@@ -47,11 +51,11 @@ class SolrEngine extends Engine
             $model = $models->first();
             $update = $this->client->createUpdate();
             $documents = $models->map(
-                /**
-                 * @return false|\Solarium\QueryType\Update\Query\Document\Document
-                 */
+            /**
+             * @return false|Document
+             */
                 function ($model) use ($update) {
-                    /** @var \Solarium\QueryType\Update\Query\Document\Document */
+                    /** @var Document */
                     $document = $update->createDocument();
                     /** @var Searchable $model */
                     $attrs = $model->toSearchableArray();
@@ -95,7 +99,7 @@ class SolrEngine extends Engine
     /**
      * Remove the given model from the index.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection  $models
+     * @param Collection $models
      * @return void
      */
     public function delete($models)
@@ -119,6 +123,7 @@ class SolrEngine extends Engine
      * @param BaseBuilder $builder
      *
      * @return mixed
+     * @throws Exception
      */
     public function search(BaseBuilder $builder)
     {
@@ -133,10 +138,11 @@ class SolrEngine extends Engine
      * Perform the given search on the engine.
      *
      * @param BaseBuilder $builder
-     * @param int  $perPage
-     * @param int  $page
+     * @param int $perPage
+     * @param int $page
      *
      * @return mixed
+     * @throws Exception
      */
     public function paginate(BaseBuilder $builder, $perPage, $page)
     {
@@ -166,10 +172,11 @@ class SolrEngine extends Engine
      * Map the given results to instances of the given model.
      *
      * @param BaseBuilder $builder
-     * @param \Solarium\QueryType\Select\Result\Result  $results
-     * @param \Illuminate\Database\Eloquent\Model  $model
+     * @param \Solarium\QueryType\Select\Result\Result $results
+     * @param Model $model
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection
+     * @throws Exception
      */
     public function map(BaseBuilder $builder, $results, $model)
     {
@@ -205,10 +212,11 @@ class SolrEngine extends Engine
     /**
      * Return the appropriate sorting(ranking) query for the SQL driver.
      *
-     * @param \Illuminate\Database\Eloquent\Model  $model
-     * @param  \Illuminate\Database\Eloquent\Collection  $ids
+     * @param Model $model
+     * @param Collection $ids
      *
      * @return string The query that will be used for the ordering (ranking)
+     * @throws Exception
      */
     private function orderQuery($model, $ids)
     {
@@ -225,7 +233,7 @@ class SolrEngine extends Engine
             $id_list = $ids->implode(',');
             $query = sprintf('FIELD(%s, %s)', $model_key, $id_list, 'ASC');
         } else {
-            throw new \Exception('The SQL driver is not supported.');
+            throw new Exception('The SQL driver is not supported.');
         }
 
         return $query;
@@ -248,12 +256,13 @@ class SolrEngine extends Engine
      * @param Builder|BaseBuilder $builder The query builder we were passed
      * @param array $options An array of options to use to do things like pagination, faceting?
      *
-     * @return \Solarium\Core\Query\Result\Result The results of the query
+     * @return Result The results of the query
+     * @throws Exception
      */
     protected function performSearch($builder, array $options = [])
     {
         if (! ($builder instanceof Builder)) {
-            throw new \Exception('Your model must use the Scout\\Solr\\Searchable trait in place of Laravel\\Scout\\Searchable');
+            throw new Exception('Your model must use the Scout\\Solr\\Searchable trait in place of Laravel\\Scout\\Searchable');
         }
         $endpoint = $builder->model->searchableAs();
         // build the query string for the q parameter
@@ -386,5 +395,13 @@ class SolrEngine extends Engine
             'items' => array_merge($carryItems, $items),
             'placeholderStart' => $start,
         ];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function flush($model)
+    {
+        // TODO: Implement flush() method.
     }
 }
