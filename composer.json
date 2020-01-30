@@ -6,7 +6,7 @@
         "php": "^7.0",
         "laravel/scout": "^7.2",
         "illuminate/support": "^6.12",
-        "solarium/solarium": "^4.1"
+        "solarium/solarium": "^5.1"
     },
     "autoload": {
         "psr-4": {
