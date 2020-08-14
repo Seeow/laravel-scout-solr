@@ -5,7 +5,7 @@
     "require": {
         "php": "^7.0",
         "laravel/scout": "^7.2",
-        "illuminate/support": "^6.12",
+        "illuminate/support": "^6.0|^7.0",
         "solarium/solarium": "^5.1"
     },
     "autoload": {
